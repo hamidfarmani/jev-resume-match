@@ -43,11 +43,23 @@ export default function Home() {
     setLoading(true);
     try {
       const response = await fetch("/api/review", { method: "POST", body: data });
-      const payload = await response.json();
+      const body = await response.text();
+      let payload: Record<string, unknown> | null = null;
+      try {
+        const parsed: unknown = JSON.parse(body);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          payload = parsed as Record<string, unknown>;
+        }
+      } catch {
+        // A failed server function may return an empty or HTML response.
+      }
       if (!response.ok) {
-        if (payload.code === "demo_limit") setDemo((current) => current && { ...current, remaining: 0 });
-        if (payload.code === "demo_unavailable") setDemo((current) => current && { ...current, demoAvailable: false });
-        throw new Error(payload.error || "Review failed.");
+        if (payload?.code === "demo_limit") setDemo((current) => current && { ...current, remaining: 0 });
+        if (payload?.code === "demo_unavailable") setDemo((current) => current && { ...current, demoAvailable: false });
+        throw new Error(typeof payload?.error === "string" ? payload.error : "The review could not be completed. Please try again.");
+      }
+      if (!payload || typeof payload.overall !== "number" || !Array.isArray(payload.dimensions)) {
+        throw new Error("The server returned an invalid review. Please try again.");
       }
       const remaining = response.headers.get("X-Demo-Remaining");
       if (remaining !== null) setDemo({ demoAvailable: true, remaining: Number(remaining) });

@@ -1,5 +1,4 @@
 import mammoth from "mammoth";
-import { PDFParse } from "pdf-parse";
 
 export async function extractResume(file: File): Promise<{ text: string; pageCount: number | null }> {
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -7,15 +6,21 @@ export async function extractResume(file: File): Promise<{ text: string; pageCou
 
   if (extension === "pdf") {
     if (bytes.subarray(0, 4).toString() !== "%PDF") throw new Error("The PDF file is invalid.");
-    const parser = new PDFParse({ data: bytes });
     try {
-      const result = await parser.getText();
-      return { text: result.text, pageCount: result.total };
+      // The worker initializes DOMMatrix before pdf-parse loads PDF.js.
+      const { CanvasFactory, getData } = await import("pdf-parse/worker");
+      const { PDFParse } = await import("pdf-parse");
+      PDFParse.setWorker(getData());
+      const parser = new PDFParse({ data: bytes, CanvasFactory });
+      try {
+        const result = await parser.getText();
+        return { text: result.text, pageCount: result.total };
+      } finally {
+        await parser.destroy();
+      }
     } catch (error) {
       console.error("PDF text extraction failed", error instanceof Error ? error.name : "UnknownError");
       throw new Error("The PDF could not be read. Try exporting it again or use a DOCX or TXT file.");
-    } finally {
-      await parser.destroy();
     }
   }
   if (extension === "docx") {
