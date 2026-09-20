@@ -24,7 +24,7 @@ export default function Home() {
     fetch("/api/review", { cache: "no-store" })
       .then((response) => response.json())
       .then((status) => setDemo(status))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -205,7 +205,7 @@ export default function Home() {
         <nav aria-label="Contact">
           <a href="mailto:hamidfarmani1@gmail.com">Email me</a>
           <a href="https://hamidfarmani.com" target="_blank" rel="noopener noreferrer">hamidfarmani.com</a>
-          <a href="https://github.com/hamidfarmani" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/hamidfarmani/jev-resume-match" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </footer>
     </main>
