@@ -13,12 +13,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - This is a Next.js 16 App Router application using TypeScript, React, and pnpm. Use `pnpm` and keep `pnpm-lock.yaml` in sync with dependency changes.
 - `app/page.tsx` is the interactive review UI. `app/api/review/route.ts` validates uploads and calls the server-side review. Keep the API key and file parsing on the server.
 - `lib/resume-file.ts` extracts text from PDF, DOCX, and TXT. `lib/experience-bullets.ts` identifies experience bullets. `lib/resume-review.ts` defines Jev questions, scoring weights, and ordering. `docs/resume-prompt.md` records the rubric that inspired these criteria.
-- `DESIGN.md` is the visual design reference. Apply its typography, colors, spacing, and shapes to this resume workflow; keep product-specific controls and result data relevant to resume review.
+- `DESIGN.md` is the visual reference, not a product specification. Apply its warm cream and white surfaces, Inter as the available Pin Sans substitute, restrained `#e60023` primary action, 16px standard radius, 32px large cards, pill chips, and generous spacing. Do not copy Pinterest navigation, photography, or sign-up flows into this resume tool.
+- Keep the public flow minimal: resume file or pasted text, target role, optional job description, then review results. Do not expose Jev, model versions, confidence jargon, or experimental controls in the user interface; explain the implementation in `docs/how-it-works.md`.
 
 ## Review behavior
 
 - Use Jev for narrow, typed judgments. Keep parsing, validation, weighted calculations, and ordering in code. Jev does not generate prose; this app presents scores and evidence signals rather than resume rewrites or hiring predictions.
-- Keep the rubric levels concrete and independently understandable. When changing a question or weight, update the corresponding result labels and README so users can see what a score means. Treat scores and bullet order as exploratory until checked against representative resumes.
+- Keep the rubric levels concrete and independently understandable. When changing a question or weight, update the corresponding result labels and `docs/how-it-works.md` so users can see what a score means. Treat scores and bullet order as exploratory until checked against representative resumes.
 - A Score value is a probability-weighted position on rubric levels; its confidence measures how concentrated that distribution is. A Noul value is the probability of yes. Do not display either as a claim of objective correctness.
 - Preserve `serverExternalPackages: ["pdf-parse"]` in `next.config.ts` unless PDF uploads have been verified through the Next.js route after changing it. Bundling the parser breaks PDF.js worker resolution in this project.
 
