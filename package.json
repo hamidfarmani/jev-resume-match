@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:quota": "node --experimental-strip-types --test tests/demo-quota.test.mjs"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "^0.6.0",

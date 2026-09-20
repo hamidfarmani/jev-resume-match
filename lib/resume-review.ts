@@ -139,8 +139,8 @@ export type ReviewResult = {
   model: string;
 };
 
-export async function reviewResume(input: ReviewInput): Promise<ReviewResult> {
-  const client = new TypeSafeClient({ apiKey: process.env.TYPESAFE_API_KEY || process.env.JEV_API_KEY });
+export async function reviewResume(input: ReviewInput, apiKey: string): Promise<ReviewResult> {
+  const client = new TypeSafeClient({ apiKey, logLevel: "off", retry: { maxRetries: 0 } });
   const extractedBullets = extractExperienceBullets(input.resume, 25);
   const bullets = extractedBullets.slice(0, 24);
   const [response, bulletResponse] = await Promise.all([client.systemOne({

@@ -12,8 +12,8 @@ export async function extractResume(file: File): Promise<{ text: string; pageCou
       const result = await parser.getText();
       return { text: result.text, pageCount: result.total };
     } catch (error) {
-      console.error("PDF text extraction failed", error);
-      throw new Error("The PDF could not be read. Try exporting it again or paste its text.");
+      console.error("PDF text extraction failed", error instanceof Error ? error.name : "UnknownError");
+      throw new Error("The PDF could not be read. Try exporting it again or use a DOCX or TXT file.");
     } finally {
       await parser.destroy();
     }
@@ -23,7 +23,7 @@ export async function extractResume(file: File): Promise<{ text: string; pageCou
       const result = await mammoth.extractRawText({ buffer: bytes });
       return { text: result.value, pageCount: null };
     } catch {
-      throw new Error("The DOCX could not be read. Try exporting it again or paste its text.");
+      throw new Error("The DOCX could not be read. Try exporting it again or use a PDF or TXT file.");
     }
   }
   if (extension === "txt") return { text: bytes.toString("utf8"), pageCount: null };

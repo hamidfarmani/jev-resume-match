@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { ReviewResult } from "@/lib/resume-review";
 
 export default function Home() {
@@ -8,6 +8,14 @@ export default function Home() {
   const [result, setResult] = useState<ReviewResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demo, setDemo] = useState<{ demoAvailable: boolean; remaining: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/review", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((status) => setDemo(status))
+      .catch(() => {});
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -15,17 +23,23 @@ export default function Home() {
     setResult(null);
 
     const data = new FormData(event.currentTarget);
-    if (file) data.set("file", file);
-    if (!file && !String(data.get("resume") || "").trim()) {
-      setError("Upload a resume or paste its text.");
+    if (!file) {
+      setError("Choose a resume file.");
       return;
     }
+    data.set("file", file);
 
     setLoading(true);
     try {
       const response = await fetch("/api/review", { method: "POST", body: data });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Review failed.");
+      if (!response.ok) {
+        if (payload.code === "demo_limit") setDemo((current) => current && { ...current, remaining: 0 });
+        if (payload.code === "demo_unavailable") setDemo((current) => current && { ...current, demoAvailable: false });
+        throw new Error(payload.error || "Review failed.");
+      }
+      const remaining = response.headers.get("X-Demo-Remaining");
+      if (remaining !== null) setDemo({ demoAvailable: true, remaining: Number(remaining) });
       setResult(payload as ReviewResult);
       window.setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (cause) {
@@ -50,7 +64,7 @@ export default function Home() {
       <section id="review" className="card form-card" aria-labelledby="form-title">
         <div className="card-title">
           <h2 id="form-title">Check your resume</h2>
-          <p>Upload a file or paste the text below.</p>
+          <p>Upload a PDF, DOCX, or TXT file to get started.</p>
         </div>
         <form onSubmit={submit} aria-busy={loading}>
           <label className="field-label" htmlFor="resume-file">Resume file</label>
@@ -70,17 +84,27 @@ export default function Home() {
           </label>
           {file && <button className="remove-file" type="button" onClick={() => setFile(null)}>Remove file</button>}
 
-          <div className="divider">or paste text</div>
-          <label className="field-label" htmlFor="resume">Resume text</label>
-          <textarea id="resume" name="resume" rows={5} maxLength={40000} disabled={Boolean(file)} placeholder="Paste your resume here…" />
-
           <label className="field-label" htmlFor="targetRole">Target role</label>
           <input id="targetRole" name="targetRole" required maxLength={200} placeholder="e.g. Senior Software Engineer" />
 
           <label className="field-label" htmlFor="jobDescription">Job description <span>optional</span></label>
           <textarea id="jobDescription" name="jobDescription" rows={4} maxLength={12000} placeholder="Paste a job description for a more specific review…" />
 
-          <p className="privacy">Your resume is sent to an AI service for scoring. This app does not store it.</p>
+          <div className="demo-note">
+            <strong>Small demo</strong>
+            <p>{demo?.demoAvailable === false
+              ? "Free checks are unavailable right now. You can use your own API key."
+              : demo
+                ? `${demo.remaining} of 2 free checks left in this browser.`
+                : "Two free checks are included in this browser."}</p>
+          </div>
+          <details className="key-option">
+            <summary>Use your own API key for more checks</summary>
+            <p>Get a key from <a href="https://console.typesafe.ai/" target="_blank" rel="noopener noreferrer">TypeSafe</a>. It is sent through this app to run your review and is not saved here.</p>
+            <label className="field-label" htmlFor="apiKey">TypeSafe API key</label>
+            <input id="apiKey" name="apiKey" type="password" autoComplete="off" placeholder="Paste your API key" />
+          </details>
+          <p className="privacy">Your resume is sent to TypeSafe for scoring. This app does not store your resume or API key.</p>
           {error && <p className="error" role="alert">{error}</p>}
           <button className="submit" type="submit" disabled={loading}>
             {loading ? "Checking your resume…" : "Check resume"}<span aria-hidden="true">↗</span>
@@ -162,6 +186,13 @@ export default function Home() {
         </section>
         <p className="result-note">Scores are guides for reviewing the text. File extraction cannot check visual layout, fonts, or columns.</p>
       </section>}
+      <footer className="site-footer">
+        <span>Made by Hamid Farmani</span>
+        <nav aria-label="Contact">
+          <a href="mailto:hamidfarmani1@gmail.com">Email me</a>
+          <a href="https://hamidfarmani.com" target="_blank" rel="noopener noreferrer">hamidfarmani.com</a>
+        </nav>
+      </footer>
     </main>
   );
 }
