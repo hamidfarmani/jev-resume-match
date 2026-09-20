@@ -1,36 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Job Match resume review
 
-## Getting Started
+A Next.js resume rubric explorer using [TypeSafe Jev](https://docs.typesafe.ai/) for typed judgments. It accepts PDF, DOCX, TXT, or pasted text, then reports ordered criterion scores, level probabilities, experience-bullet scores, and yes/no evidence checks.
 
-First, run the development server:
+## Run locally
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Install dependencies: `pnpm install`
+2. Copy `.env.example` to `.env.local` and set `TYPESAFE_API_KEY` (the existing `JEV_API_KEY` name also works).
+3. Start the app: `pnpm dev`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The API key stays on the server. Reviews are processed in memory and are not saved by this app. The resume text and supplied role context are sent to TypeSafe. The app uses the pinned `jev-1.13.0` model so that scores do not change silently when an alias moves.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How the rubric works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The criteria come from [`docs/resume-prompt.md`](docs/resume-prompt.md). Nine Jev Score questions assess summary value, achievements versus duties, impact evidence, ownership, target relevance, ordering, company context, readability, and skills. Three Noul questions check measured results, company context, and action-led bullets. Optional project and language fields add one question each. Code sorts the criterion scores and combines them into a weighted index. Each criterion exposes Jev's full four-level probability distribution.
 
-## Learn More
+Experience bullets are extracted from an Experience section (up to 24). Jev scores each one independently for accomplishment, impact, transferable capability, and relevance to the target role. Code calculates a possible order within each role, weighted toward role relevance. The original order remains visible. A PDF page count is read from the file itself; visual layout cannot be verified from extracted text. DOCX and pasted text do not have a trustworthy page count.
 
-To learn more about Next.js, take a look at the following resources:
+Jev does not generate text. This app presents its judgments for inspection; it does not generate recommendations, rewrite resume lines, or make hiring predictions. The score-based bullet order is a ranking to inspect, not an instruction to change the resume automatically. The original prompt also includes resume creation; this version implements a scoring example.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Upload size is limited to 5 MB, extracted resume text to 40,000 characters, and job description to 12,000 characters. Scanned PDFs require OCR before upload. To calibrate scores, compare the output against a set of resumes you have reviewed manually and adjust the rubric and weights in `lib/resume-review.ts`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Check the project
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Run `pnpm lint`, `pnpm exec tsc --noEmit`, and `pnpm build`.

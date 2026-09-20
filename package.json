@@ -9,7 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@typesafe-ai/sdk": "^0.6.0",
+    "mammoth": "^1.12.3",
     "next": "16.3.5",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -23,5 +26,5 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@12.5.1"
+  "packageManager": "pnpm@10.32.1"
 }
