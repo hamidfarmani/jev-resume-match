@@ -34,10 +34,10 @@ export default function Home() {
   }
 
   return <main className="shell">
-    <header className="site-header"><div className="brand"><span>↗</span> Job Match <small>/ Resume review</small></div><p>Powered by TypeSafe Jev</p></header>
-    <section className="hero"><div className="eyebrow">● &nbsp; Resume rubric explorer</div><h1>See how your resume<br /><em>scores across the rubric.</em></h1><p>Jev evaluates nine resume criteria and scores each experience bullet. Explore the scores, the evidence behind them, and a possible bullet order for your target role.</p></section>
+    <header className="site-header"><div className="brand"><span>↗</span> Job Match <small>/ Resume review</small></div><a className="header-link" href="#review">Start a review <span aria-hidden="true">↗</span></a></header>
+    <section className="hero"><div className="eyebrow">Resume rubric explorer</div><h1>See how your resume<br /><em>scores across the rubric.</em></h1><p>Jev evaluates nine resume criteria and scores each experience bullet. Explore the scores, the evidence behind them, and a possible bullet order for your target role.</p><div className="hero-chips"><span>9 resume criteria</span><span>4 scores per bullet</span><span>Powered by TypeSafe Jev</span></div></section>
     <div className="workspace">
-      <section className="card form-card" aria-labelledby="form-title">
+      <section id="review" className="card form-card" aria-labelledby="form-title">
         <div className="card-title"><span className="step">01</span><div><h2 id="form-title">Start your review</h2><p>Share the resume you want to improve.</p></div></div>
         <form onSubmit={submit}>
           <label className="field-label" htmlFor="resume-file">Resume file</label>

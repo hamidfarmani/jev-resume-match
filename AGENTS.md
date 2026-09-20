@@ -13,6 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - This is a Next.js 16 App Router application using TypeScript, React, and pnpm. Use `pnpm` and keep `pnpm-lock.yaml` in sync with dependency changes.
 - `app/page.tsx` is the interactive review UI. `app/api/review/route.ts` validates uploads and calls the server-side review. Keep the API key and file parsing on the server.
 - `lib/resume-file.ts` extracts text from PDF, DOCX, and TXT. `lib/experience-bullets.ts` identifies experience bullets. `lib/resume-review.ts` defines Jev questions, scoring weights, and ordering. `docs/resume-prompt.md` records the rubric that inspired these criteria.
+- `DESIGN.md` is the visual design reference. Apply its typography, colors, spacing, and shapes to this resume workflow; keep product-specific controls and result data relevant to resume review.
 
 ## Review behavior
 
