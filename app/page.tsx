@@ -13,12 +13,14 @@ export default function Home() {
     event.preventDefault();
     setError("");
     setResult(null);
+
     const data = new FormData(event.currentTarget);
     if (file) data.set("file", file);
     if (!file && !String(data.get("resume") || "").trim()) {
       setError("Upload a resume or paste its text.");
       return;
     }
+
     setLoading(true);
     try {
       const response = await fetch("/api/review", { method: "POST", body: data });
@@ -33,32 +35,133 @@ export default function Home() {
     }
   }
 
-  return <main className="shell">
-    <header className="site-header"><div className="brand"><span>↗</span> Job Match <small>/ Resume review</small></div><a className="header-link" href="#review">Start a review <span aria-hidden="true">↗</span></a></header>
-    <section className="hero"><div className="eyebrow">Resume rubric explorer</div><h1>See how your resume<br /><em>scores across the rubric.</em></h1><p>Jev evaluates nine resume criteria and scores each experience bullet. Explore the scores, the evidence behind them, and a possible bullet order for your target role.</p><div className="hero-chips"><span>9 resume criteria</span><span>4 scores per bullet</span><span>Powered by TypeSafe Jev</span></div></section>
-    <div className="workspace">
+  return (
+    <main className="shell">
+      <header className="site-header">
+        <div className="brand"><span aria-hidden="true">↗</span> Job Match</div>
+      </header>
+
+      <section className="hero">
+        <span className="eyebrow">Resume review</span>
+        <h1>See what your resume shows.</h1>
+        <p>Check how clearly your resume presents your experience, impact, and fit for the role you want.</p>
+      </section>
+
       <section id="review" className="card form-card" aria-labelledby="form-title">
-        <div className="card-title"><span className="step">01</span><div><h2 id="form-title">Start your review</h2><p>Share the resume you want to improve.</p></div></div>
-        <form onSubmit={submit}>
+        <div className="card-title">
+          <h2 id="form-title">Check your resume</h2>
+          <p>Upload a file or paste the text below.</p>
+        </div>
+        <form onSubmit={submit} aria-busy={loading}>
           <label className="field-label" htmlFor="resume-file">Resume file</label>
-          <label className="upload" htmlFor="resume-file"><input id="resume-file" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onChange={e => setFile(e.target.files?.[0] ?? null)} /><span>↑</span><strong>{file ? file.name : "Choose a file to upload"}</strong><small>PDF, DOCX or TXT · up to 5 MB</small></label>
-          <div className="divider">or paste your resume</div>
-          <label className="field-label" htmlFor="resume">Resume text</label><textarea id="resume" name="resume" rows={6} maxLength={40000} placeholder="Paste your resume here if you prefer…" />
-          <div className="field-grid"><div><label className="field-label" htmlFor="targetRole">Target role *</label><input id="targetRole" name="targetRole" required maxLength={200} placeholder="e.g. Senior Product Designer" /></div><div><label className="field-label" htmlFor="languages">Additional languages <i>optional</i></label><input id="languages" name="languages" maxLength={1000} placeholder="e.g. Swedish, French" /></div></div>
-          <label className="field-label" htmlFor="jobDescription">Job description <i>recommended</i></label><textarea id="jobDescription" name="jobDescription" rows={5} maxLength={12000} placeholder="Paste the role description for a more targeted review…" />
-          <label className="field-label" htmlFor="projects">Extra projects or portfolio links <i>optional</i></label><textarea id="projects" name="projects" rows={3} maxLength={4000} placeholder="Anything relevant that your resume might be missing…" />
-          <p className="privacy">Your resume is processed for this review and sent to TypeSafe for evaluation. This app does not save it.</p>
+          <label className="upload" htmlFor="resume-file">
+            <input
+              id="resume-file"
+              type="file"
+              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              onChange={(event) => {
+                setFile(event.target.files?.[0] ?? null);
+                event.target.value = "";
+              }}
+            />
+            <span aria-hidden="true">↑</span>
+            <strong>{file ? file.name : "Choose a file"}</strong>
+            <small>PDF, DOCX or TXT · up to 5 MB</small>
+          </label>
+          {file && <button className="remove-file" type="button" onClick={() => setFile(null)}>Remove file</button>}
+
+          <div className="divider">or paste text</div>
+          <label className="field-label" htmlFor="resume">Resume text</label>
+          <textarea id="resume" name="resume" rows={5} maxLength={40000} disabled={Boolean(file)} placeholder="Paste your resume here…" />
+
+          <label className="field-label" htmlFor="targetRole">Target role</label>
+          <input id="targetRole" name="targetRole" required maxLength={200} placeholder="e.g. Senior Software Engineer" />
+
+          <label className="field-label" htmlFor="jobDescription">Job description <span>optional</span></label>
+          <textarea id="jobDescription" name="jobDescription" rows={4} maxLength={12000} placeholder="Paste a job description for a more specific review…" />
+
+          <p className="privacy">Your resume is sent to an AI service for scoring. This app does not store it.</p>
           {error && <p className="error" role="alert">{error}</p>}
-          <button className="submit" type="submit" disabled={loading}>{loading ? "Reviewing your resume…" : "Review my resume"}<span>↗</span></button>
+          <button className="submit" type="submit" disabled={loading}>
+            {loading ? "Checking your resume…" : "Check resume"}<span aria-hidden="true">↗</span>
+          </button>
         </form>
       </section>
-      <aside className="card guide"><div className="card-title"><span className="step">02</span><h2>What Jev does</h2></div><div className="guide-item"><b>①</b><div><h3>Scores nine criteria</h3><p>Each criterion has four concrete rubric levels and a probability for each one.</p></div></div><div className="guide-item"><b>②</b><div><h3>Examines each bullet</h3><p>Accomplishment, impact, transferable capability, and target-role relevance are judged separately.</p></div></div><div className="guide-item"><b>③</b><div><h3>Orders within each role</h3><p>Code combines those bullet scores to surface important work earlier.</p></div></div><div className="rubric"><strong>THE BOUNDARY</strong><p>Jev makes typed judgments. Code calculates the weighted index and reads PDF page count.</p></div></aside>
-    </div>
-    {result && <section id="results" className="results" aria-live="polite"><div className="results-title"><div><span className="eyebrow">JEV EVALUATION</span><h2>Rubric results, lowest first.</h2></div><small>{result.model} · {result.dimensions.length + result.bullets.length * 4} Score questions · {result.checks.length} visible Noul questions</small></div>
-      <div className="results-grid"><div className="card score-card"><div className="score-head">Weighted rubric index <small>Calculated in code</small></div><div className="big-score">{result.overall}<small>/100</small></div><p>This combines Jev&apos;s nine independent resume scores using fixed weights. It is not a hiring prediction.</p>{result.pageCount !== null && <p className="page-fact">PDF length: {result.pageCount} {result.pageCount === 1 ? "page" : "pages"} · read from the file</p>}</div><div className="card dimensions"><h3>Jev scores</h3>{result.dimensions.map((item, index) => <div className="dimension" key={item.id}><div><span><b className="rank">{index + 1}.</b> <span className="dimension-group">{item.group} / </span>{item.label}</span><strong>{item.value}/100</strong></div><div className="bar"><span style={{ width: `${item.value}%` }} /></div><small>Weight {item.weight}% · distribution confidence {Math.round(item.confidence * 100)}%</small><details className="probabilities"><summary>Show four rubric levels and probabilities</summary>{item.levels.map((level, levelIndex) => <div className="probability-row" key={levelIndex}><span>{levelIndex}. {level.description}</span><strong>{Math.round(level.probability * 100)}%</strong></div>)}</details></div>)}</div></div>
-      <div className="card bullet-card"><div className="bullet-heading"><div><span className="eyebrow">EXPERIENCE BULLETS</span><h3>What belongs higher?</h3><p>Jev evaluates accomplishment beyond routine duties, evidence of impact, a capability you could repeat elsewhere, and fit with the target role. Each 0–100 figure is a normalized rubric score, not a success probability. The proposed order is calculated within each role: relevance 40%, impact 25%, accomplishment 20%, repeatable capability 15%.</p></div><small>{result.bullets.length} bullets scored</small></div>{result.bullets.length === 0 ? <p className="footnote">No experience bullets were detected. Use an Experience heading and bullet characters such as • or ● for bullet-level scoring.</p> : Array.from(new Set(result.bullets.map(bullet => bullet.role))).map(role => <div className="role-group" key={role}><h4>{role}</h4>{result.bullets.filter(bullet => bullet.role === role).toSorted((a, b) => a.suggestedPosition - b.suggestedPosition).map(bullet => <article className="bullet-row" key={bullet.id}><div className="bullet-position"><strong>#{bullet.suggestedPosition}</strong><small>was #{bullet.originalPosition}</small></div><div className="bullet-body"><p>{bullet.text}</p><div className="bullet-scores"><span>Accomplishment <b>{bullet.scores.accomplishment.value}</b></span><span>Impact <b>{bullet.scores.impact.value}</b></span><span>Repeatable <b>{bullet.scores.transferable.value}</b></span><span>Role fit <b>{bullet.scores.relevance.value}</b></span></div></div><strong className="bullet-priority">{bullet.priority}</strong></article>)}</div>)}{result.bulletsTruncated && <p className="footnote">Only the first 24 experience bullets were scored.</p>}</div>
-      <div className="card signal-card"><div><span className="eyebrow">JEV YES/NO QUESTIONS</span><h3>Specific resume signals</h3><p>The percentage is Jev&apos;s probability that the statement is true. A value near 50% is uncertain.</p></div><div className="signals">{result.checks.map(check => <div className="signal" key={check.label}><span>{check.label}</span><strong>{Math.round(check.probability * 100)}%</strong></div>)}</div></div><p className="result-note">Confidence describes how concentrated a Score&apos;s probabilities are, not whether the resume is objectively good. Text extraction cannot verify fonts, columns, or visual layout.</p>
-    </section>}
-    <footer>Job Match · Better evidence. Better applications.</footer>
-  </main>;
+
+      {result && <section id="results" className="results" aria-live="polite">
+        <div className="results-title">
+          <span className="eyebrow">Your review</span>
+          <h2>A closer look at your resume</h2>
+        </div>
+
+        <div className="results-grid">
+          <div className="card score-card">
+            <h3>Overall score</h3>
+            <div className="big-score">{result.overall}<small>/100</small></div>
+            <p>A weighted view of the criteria below. This score cannot predict a hiring decision.</p>
+            {result.pageCount !== null && <p className="page-fact">PDF length: {result.pageCount} {result.pageCount === 1 ? "page" : "pages"}</p>}
+          </div>
+
+          <div className="card dimensions">
+            <div className="section-heading">
+              <h3>Review areas</h3>
+              <p>Ordered from lowest score to highest.</p>
+            </div>
+            {result.dimensions.map((item) => <article className="dimension" key={item.id}>
+              <div className="dimension-top">
+                <div><small>{item.group}</small><h4>{item.label}</h4></div>
+                <strong>{item.value}<span>/100</span></strong>
+              </div>
+              <div className="bar" aria-hidden="true"><span style={{ width: `${item.value}%` }} /></div>
+              <details className="probabilities">
+                <summary>How this was scored</summary>
+                <p>Each level below shows how likely the resume was to match it.</p>
+                {item.levels.map((level, index) => <div className="probability-row" key={index}>
+                  <span>{level.description}</span><strong>{Math.round(level.probability * 100)}%</strong>
+                </div>)}
+              </details>
+            </article>)}
+          </div>
+        </div>
+
+        <section className="card bullet-card" aria-labelledby="bullets-title">
+          <div className="section-heading">
+            <div><h3 id="bullets-title">Experience bullets</h3><p>Within each role, bullets are sorted by fit and evidence. Compare the new position with the original.</p></div>
+            <span>{result.bullets.length} checked</span>
+          </div>
+          {result.bullets.length === 0
+            ? <p className="empty-note">No experience bullets were found. An “Experience” heading and bullet characters such as • help us identify them.</p>
+            : Array.from(new Set(result.bullets.map((bullet) => bullet.role))).map((role, index) => {
+              const bullets = result.bullets.filter((bullet) => bullet.role === role).toSorted((a, b) => a.suggestedPosition - b.suggestedPosition);
+              return <details className="role-group" key={role} open={index === 0}>
+                <summary><span>{role}</span><small>{bullets.length} {bullets.length === 1 ? "bullet" : "bullets"}</small></summary>
+                {bullets.map((bullet) => <article className="bullet-row" key={bullet.id}>
+                  <div className="bullet-position"><strong>#{bullet.suggestedPosition}</strong><small>was #{bullet.originalPosition}</small></div>
+                  <div className="bullet-body">
+                    <p>{bullet.text}</p>
+                    <div className="bullet-scores">
+                      <span>Accomplishment <b>{bullet.scores.accomplishment.value}</b></span>
+                      <span>Impact <b>{bullet.scores.impact.value}</b></span>
+                      <span>Repeatable skill <b>{bullet.scores.transferable.value}</b></span>
+                      <span>Role fit <b>{bullet.scores.relevance.value}</b></span>
+                    </div>
+                  </div>
+                  <strong className="bullet-priority"><span>Order score</span>{bullet.priority}<small>/100</small></strong>
+                </article>)}
+              </details>;
+            })}
+          {result.bulletsTruncated && <p className="footnote">Only the first 24 experience bullets were checked.</p>}
+          <p className="footnote">The suggested order gives more weight to role fit and impact. Bullet scores describe the text as written.</p>
+        </section>
+
+        <section className="card signal-card" aria-labelledby="checks-title">
+          <div className="section-heading"><h3 id="checks-title">Quick checks</h3><p>How likely each statement is to be true of your resume.</p></div>
+          <div className="signals">{result.checks.map((check) => <div className="signal" key={check.label}>
+            <span>{check.label}</span><strong>{Math.round(check.probability * 100)}%</strong>
+          </div>)}</div>
+        </section>
+        <p className="result-note">Scores are guides for reviewing the text. File extraction cannot check visual layout, fonts, or columns.</p>
+      </section>}
+    </main>
+  );
 }

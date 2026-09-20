@@ -5,8 +5,6 @@ export type ReviewInput = {
   resume: string;
   targetRole: string;
   jobDescription: string;
-  projects: string;
-  languages: string;
   pageCount: number | null;
 };
 
@@ -80,8 +78,6 @@ const questions = {
   quantified: noul("Do most achievement bullets in the resume include a credible measure of result or scale, such as time, percentage, users, volume, revenue, or a concrete before-and-after? Answer no if there are no achievement bullets."),
   companyContext: noul("For the roles in the resume, is there enough company or product context for an unfamiliar reader to understand the work? Answer no if there are no roles."),
   actionBullets: noul("Do most experience bullets begin with a strong action verb and describe something the candidate did or delivered? Answer no if there are no experience bullets."),
-  projectOpportunity: noul("Does `extra_projects` contain a project or portfolio item relevant to `target_role` that adds useful evidence missing from `resume`? Answer no if extra projects were not provided or merely duplicate resume content."),
-  languageOpportunity: noul("Would a language in `additional_languages` be a meaningful differentiator for `target_role` or `job_description` and be worth including on this resume? Answer no if additional languages were not provided or relevance is not apparent."),
 };
 
 const bulletRubrics = {
@@ -153,8 +149,6 @@ export async function reviewResume(input: ReviewInput): Promise<ReviewResult> {
       resume: input.resume,
       target_role: input.targetRole,
       job_description: input.jobDescription || "Not provided",
-      extra_projects: input.projects || "Not provided",
-      additional_languages: input.languages || "Not provided",
     },
     questions,
   }), bullets.length ? client.systemOne({
@@ -185,8 +179,6 @@ export async function reviewResume(input: ReviewInput): Promise<ReviewResult> {
     { label: "Roles have enough company context", probability: response.answers.companyContext.noul },
     { label: "Most experience bullets are action-led", probability: response.answers.actionBullets.noul },
   ];
-  if (input.projects) checks.push({ label: "Extra project adds missing role evidence", probability: response.answers.projectOpportunity.noul });
-  if (input.languages) checks.push({ label: "Additional language is a role differentiator", probability: response.answers.languageOpportunity.noul });
 
   const reviewedBullets: BulletReview[] = bullets.map((bullet) => {
     const scores = Object.fromEntries(bulletCriteria.map((criterion) => {

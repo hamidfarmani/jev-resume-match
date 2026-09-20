@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-int
 
 export const metadata: Metadata = {
   title: "Resume Review | Job Match",
-  description: "A focused, evidence-based resume review powered by TypeSafe Jev.",
+  description: "Check how clearly your resume shows your experience, impact, and fit for a role.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
