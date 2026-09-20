@@ -31,6 +31,8 @@ flowchart LR
 5. `lib/resume-review.ts` sends two `systemOne` requests in parallel when bullets are present: one for the full resume rubric and yes/no checks, and one for up to 24 individual bullets. With no extracted bullets, only the full resume request runs.
 6. The route returns JSON. The page shows the overall score, criterion details, bullet scores and suggested positions, and quick checks. Results are kept in component state; this app does not persist them.
 
+After a successful review, the client remembers the selected file's name, size, modified time, and type together with the trimmed role and job description. If those inputs are unchanged, the result stays visible and the submit button is disabled. Editing any of them enables a new review. This is a convenience check in the current page session; reloading the page loses that result. The server still enforces the demo allowance.
+
 The server API uses `TYPESAFE_API_KEY` from `.env.local`; `JEV_API_KEY` is also accepted for compatibility. The model is pinned to `jev-1.13.0` in `lib/resume-review.ts`. The server key never goes to the browser.
 
 ### What reaches Jev
