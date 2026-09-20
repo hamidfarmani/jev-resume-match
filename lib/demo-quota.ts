@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const DEMO_REVIEWS = 2;
+export const DEMO_REVIEWS = 5;
 export const DEMO_COOKIE = "job_match_demo";
 const GLOBAL_DAILY_CAP = 40;
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;

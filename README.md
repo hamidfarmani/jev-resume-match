@@ -8,7 +8,7 @@ A simple resume review app. Upload a PDF, DOCX, or TXT file. Add the role you wa
 2. Copy `.env.example` to `.env.local` and set `TYPESAFE_API_KEY`.
 3. Run `pnpm dev` and open the local URL shown in the terminal.
 
-The server key provides two demo reviews per browser. After that, visitors can enter their own TypeSafe key in the form. The entered key is sent to the server for that request and is not saved by this app. The app does not save resumes or results, but it sends extracted resume text and role context to TypeSafe. Scanned PDFs need OCR before upload.
+The server key provides five demo reviews per browser. After that, visitors can enter their own TypeSafe key in the form. The entered key is sent to the server for that request and is not saved by this app. The app does not save resumes or results, but it sends extracted resume text and role context to TypeSafe. Scanned PDFs need OCR before upload.
 
 To inspect the demo allowance locally, open `/api/review` in the same browser. It returns `remaining` and `demoAvailable`. Successful free reviews update the browser's signed `job_match_demo` cookie. Clicking **Check resume** again with unchanged inputs keeps the visible result and makes no new request. Change the file, target role, or job description to run another review.
 

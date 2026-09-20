@@ -120,8 +120,8 @@ export default function Home() {
             <p>{demo?.demoAvailable === false
               ? "Free checks are unavailable right now. You can use your own API key."
               : demo
-                ? `${demo.remaining} of 2 free checks left in this browser.`
-                : "Two free checks are included in this browser."}</p>
+                ? `${demo.remaining} of 5 free checks left in this browser.`
+                : "Five free checks are included in this browser."}</p>
           </div>
           <details className="key-option">
             <summary>Use your own API key for more checks</summary>

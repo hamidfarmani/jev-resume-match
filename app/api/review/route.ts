@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
     const used = ownerKey ? readDemoCount(request.cookies.get(DEMO_COOKIE)?.value, ownerKey) : DEMO_REVIEWS;
     if (!suppliedKey && used >= DEMO_REVIEWS) {
-      return Response.json({ error: "Your two free checks are used. Add your TypeSafe API key to continue.", code: "demo_limit" }, { status: 429 });
+      return Response.json({ error: "Your five free checks are used. Add your TypeSafe API key to continue.", code: "demo_limit" }, { status: 429 });
     }
     const extracted = await extractResume(file);
     const resume = extracted.text.trim();
