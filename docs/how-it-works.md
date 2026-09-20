@@ -27,7 +27,7 @@ flowchart LR
 1. `app/page.tsx` collects a PDF, DOCX, or TXT file, a required target role, and an optional job description. The form posts to `/api/review`.
 2. `app/api/review/route.ts` checks the inputs and runs in the Node.js runtime. A file is limited to 5 MB. Extracted resume text is limited to 40,000 characters, the job description to 12,000 characters, and the role to 200 characters.
 3. `lib/resume-file.ts` extracts text from PDF, DOCX, or TXT. PDF files also supply a page count. Scanned PDFs without embedded text need OCR first. Extracted text cannot prove how the visual layout looks.
-4. `lib/experience-bullets.ts` finds up to 25 experience bullets so the app can detect when its 24-bullet review limit was reached.
+4. `lib/experience-bullets.ts` scans work-related sections, including headings such as Work Experience, Employment History, Research Experience, and Internships. It recognizes common bullet markers, including en and em dashes, and finds up to 25 bullets so the app can detect when its 24-bullet review limit was reached. It skips unrelated sections such as Education, Skills, and Projects. [Penn Career Services](https://careerservices.upenn.edu/channels/resume/) describes general and field-specific experience headings, while [Berkeley Career Engagement](https://www.career.berkeley.edu/prepare-for-success/resumes/) lists work, research, volunteer, and project experience as common resume sections.
 5. `lib/resume-review.ts` sends two `systemOne` requests in parallel when bullets are present: one for the full resume rubric and yes/no checks, and one for up to 24 individual bullets. With no extracted bullets, only the full resume request runs.
 6. The route returns JSON. The page shows the overall score, criterion details, bullet scores and suggested positions, and quick checks. Results are kept in component state; this app does not persist them.
 
@@ -92,33 +92,37 @@ The example numbers and shortened legend are for reading the shape only. Real cr
 
 The page checks `GET /api/review` for the number of free reviews left. Five successful reviews are allowed per browser using a signed, HTTP-only cookie. A separate in-memory cap allows at most 40 review attempts with the server key per process per UTC day, and the route allows at most four reviews in flight per process. Invalid files are rejected before the TypeSafe call. One review can send two Jev requests, so 40 review attempts are not 40 model requests. SDK retries are disabled for this feature to keep that cost bounded.
 
-After the five free checks, a visitor may provide a personal TypeSafe API key. The field is collapsed in the form until needed. On a public deployment, the key must be sent over HTTPS to this app's server. It is passed to a fresh `TypeSafeClient` for that request and never written to a cookie, browser storage, response, or app database. The server key is used only when no personal key was supplied. An invalid personal key produces a plain error without logging the credential.
+A visitor may provide a personal TypeSafe API key at any time, including after the five free checks. The field is collapsed in the form until needed. The browser sends that key only while the section is open, the key is present, and the visitor has selected “Use this key for my next review.” Closing the section clears that choice and the key field; the submit handler removes any browser-autofilled key from `FormData` unless the visitor opted in. On a public deployment, the key must be sent over HTTPS to this app's server. It is passed to a fresh `TypeSafeClient` for that request and never written to a cookie, browser storage, response, or app database. The server key is used when no personal key was submitted. An invalid personal key produces a plain error without logging the credential.
 
 The anonymous allowance is best effort. Clearing cookies resets the browser count, and process restarts or multiple server instances reset or split the in-memory cap. Before putting a shared key on a public deployment, set a provider-side budget and use a shared rate-limit store if you need an enforceable limit. A key-only deployment works without a server key.
 
+For local testing, delete the `job_match_demo` cookie for the local site in the browser's developer tools to reset that browser's five-check count. It is `HttpOnly`, so `document.cookie` in the console cannot read or delete it. Restarting the local Next.js process resets the separate in-memory cap of 40 demo attempts per UTC day. Clearing one counter does not reset the other. The signed cookie and memory cap are demo safeguards, not durable or abuse-proof quotas.
+
 ## Scoring
 
-Each four-level answer is converted from its expected 0–3 score to a rounded 0–100 value with `score / 3 × 100`. The per-level probabilities are available under “How this was scored.” They express the model's distribution across the defined levels, not certainty that the resume is objectively good or bad.
+Each four-level answer is converted from its expected 0–3 score to a rounded 0–100 value with `score / 3 × 100`. The per-level probabilities are available under “See scoring levels.” They express the model's distribution across the defined levels, not certainty that the resume is objectively good or bad.
+
+In the interface, the overall score summarizes how clearly the resume supports the target role; it does not measure the candidate's ability or likelihood of being hired. Each review area includes a plain-language question about what it checks. Lower scores identify where the written evidence may need more detail. Under “See scoring levels,” percentages show estimated matches to four descriptions, not points earned on a test.
 
 | Review area | Overall weight |
 | --- | ---: |
-| Summary value | 15% |
-| Achievements vs duties | 20% |
-| Impact evidence | 15% |
+| Summary value | 10% |
+| Achievements vs duties | 25% |
+| Impact evidence | 30% |
 | Ownership and initiative | 10% |
-| Target-role relevance | 15% |
-| Important work first | 10% |
+| Target-role relevance | 10% |
+| Important work first | 5% |
 | Company context | 5% |
-| Readable structure | 5% |
-| Supported skills | 5% |
+| Readable structure | 3% |
+| Supported skills | 2% |
 
-The overall score is the weighted sum of these nine values. Lower-scoring areas appear first so a reader can find the most useful review points quickly. The rubric gives extra weight to achievements, credible impact, and role fit; it does not reward duties or unsupported keyword lists merely for being present. The underlying questions and four concrete levels live in `lib/resume-review.ts`; [the original prompt](resume-prompt.md) explains the source of those priorities.
+The overall score is the weighted sum of these nine values. Lower-scoring areas appear first so a reader can find the most useful review points quickly. Achievements and impact now account for 55% of the overall score so polished structure and keyword fit do not hide weak evidence of results. For example, applying these weights to a review with 49/100 impact and 73/100 achievements lowers its previous 81/100 overall result to about 74/100, even if the individual judgments stay the same. The underlying questions and four concrete levels live in `lib/resume-review.ts`; [the original prompt](resume-prompt.md) explains the source of those priorities.
 
 Every extracted experience bullet is scored for accomplishment, impact, repeatable skill, and target-role relevance. Its ordering score uses 20% accomplishment, 25% impact, 15% repeatable skill, and 40% role fit. Code sorts bullets within each role by that score, breaking ties by original position. The original and suggested positions remain visible. The three quick checks estimate whether most achievements include a measure, whether roles have company context, and whether most experience bullets start with an action.
 
 ## Limits and experimentation
 
-Scores are a guide to the text as written, not a hiring prediction. A missing job description leaves role fit based on the target role. Numeric impact is useful when credible, but the rubric also credits concrete qualitative outcomes. Text extraction can miss content or reading order in complex files, and it cannot inspect fonts, columns, or visual hierarchy. The experience parser may miss bullets in unusual formats.
+Scores are a guide to the text as written, not a hiring prediction. A missing job description leaves role fit based on the target role. Numeric impact is useful when credible, but the rubric also credits concrete qualitative outcomes. Text extraction can miss content or reading order in complex files, and it cannot inspect fonts, columns, or visual hierarchy. The experience parser still requires a recognizable section heading and bullet marker; unusual formats or paragraphs without markers may be missed.
 
 For experiments, edit the rubric questions, level descriptions, weights, or bullet ordering formula in `lib/resume-review.ts`. Update this document and the public labels if you change score meanings. Compare outputs with a small set of synthetic or redacted resumes reviewed by people before treating scores as calibrated. Do not commit real resumes, extracted text, credentials, or API responses.
 

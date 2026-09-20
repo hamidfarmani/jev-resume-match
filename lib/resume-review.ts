@@ -9,15 +9,15 @@ export type ReviewInput = {
 };
 
 const dimensions = [
-  { id: "summary", label: "Summary value", group: "Summary", weight: 15 },
-  { id: "achievement", label: "Achievements vs duties", group: "Experience", weight: 20 },
-  { id: "impact", label: "Impact evidence", group: "Experience", weight: 15 },
+  { id: "summary", label: "Summary value", group: "Summary", weight: 10 },
+  { id: "achievement", label: "Achievements vs duties", group: "Experience", weight: 25 },
+  { id: "impact", label: "Impact evidence", group: "Experience", weight: 30 },
   { id: "ownership", label: "Ownership and initiative", group: "Experience", weight: 10 },
-  { id: "relevance", label: "Target-role relevance", group: "Role fit", weight: 15 },
-  { id: "ordering", label: "Important work first", group: "Role fit", weight: 10 },
+  { id: "relevance", label: "Target-role relevance", group: "Role fit", weight: 10 },
+  { id: "ordering", label: "Important work first", group: "Role fit", weight: 5 },
   { id: "roleContext", label: "Company context", group: "Structure", weight: 5 },
-  { id: "clarity", label: "Readable structure", group: "Structure", weight: 5 },
-  { id: "skills", label: "Supported skills", group: "Skills", weight: 5 },
+  { id: "clarity", label: "Readable structure", group: "Structure", weight: 3 },
+  { id: "skills", label: "Supported skills", group: "Skills", weight: 2 },
 ] as const;
 
 const questions = {

@@ -8,6 +8,18 @@ function reviewSignature(file: File | null, targetRole: string, jobDescription: 
   return JSON.stringify([file.name, file.size, file.lastModified, file.type, targetRole.trim(), jobDescription.trim()]);
 }
 
+const areaDescriptions: Record<string, string> = {
+  summary: "Does the opening make your relevant background and value clear?",
+  achievement: "Do your role bullets show completed work beyond routine duties?",
+  impact: "Do your examples show results, scale, or who benefited?",
+  ownership: "Can a reader see the decisions and methods you contributed?",
+  relevance: "Does the evidence connect to the role you want?",
+  ordering: "Is your strongest relevant work easy to find early?",
+  roleContext: "Can a new reader understand each employer and its work?",
+  clarity: "Are sections, roles, and dates easy to follow in the extracted text?",
+  skills: "Are relevant skills easy to find and backed by examples?",
+};
+
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [targetRole, setTargetRole] = useState("");
@@ -16,6 +28,9 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [demo, setDemo] = useState<{ demoAvailable: boolean; remaining: number } | null>(null);
+  const [keyOpen, setKeyOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [useOwnKey, setUseOwnKey] = useState(false);
   const submitting = useRef(false);
   const signature = reviewSignature(file, targetRole, jobDescription);
   const result = signature === reviewed?.signature ? reviewed.result : null;
@@ -33,6 +48,8 @@ export default function Home() {
     setError("");
 
     const data = new FormData(event.currentTarget);
+    data.delete("apiKey");
+    if (keyOpen && useOwnKey && apiKey.trim()) data.set("apiKey", apiKey.trim());
     if (!file || !signature) {
       setError("Choose a resume file.");
       return;
@@ -123,11 +140,20 @@ export default function Home() {
                 ? `${demo.remaining} of 5 free checks left in this browser.`
                 : "Five free checks are included in this browser."}</p>
           </div>
-          <details className="key-option">
+          <details className="key-option" onToggle={(event) => {
+            const open = event.currentTarget.open;
+            setKeyOpen(open);
+            if (!open) {
+              setApiKey("");
+              setUseOwnKey(false);
+            }
+          }}>
             <summary>Use your own API key for more checks</summary>
             <p>Get a key from <a href="https://console.typesafe.ai/" target="_blank" rel="noopener noreferrer">TypeSafe</a>. It is sent through this app to run your review and is not saved here.</p>
             <label className="field-label" htmlFor="apiKey">TypeSafe API key</label>
-            <input id="apiKey" name="apiKey" type="password" autoComplete="off" disabled={loading} placeholder="Paste your API key" />
+            <input id="apiKey" type="password" autoComplete="off" disabled={loading || !keyOpen} value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="Paste your API key" />
+            <label className="key-consent"><input type="checkbox" checked={useOwnKey} disabled={loading || !keyOpen || !apiKey.trim()} onChange={(event) => setUseOwnKey(event.target.checked)} />Use this key for my next review</label>
+            {apiKey && !useOwnKey && <p>The free-check allowance applies until you select this option.</p>}
           </details>
           <p className="privacy">Your resume is sent to TypeSafe for scoring. This app does not store your resume or API key.</p>
           {error && <p className="error" role="alert">{error}</p>}
@@ -148,24 +174,26 @@ export default function Home() {
           <div className="card score-card">
             <h3>Overall score</h3>
             <div className="big-score">{result.overall}<small>/100</small></div>
-            <p>A weighted view of the criteria below. This score cannot predict a hiring decision.</p>
+            <p>Higher means the resume shows more of the evidence checked below. Achievements and results carry the most weight. Start with the lowest areas for useful improvements.</p>
+            <p className="score-explainer">It describes the evidence in the resume, not your ability or your chance of being hired.</p>
             {result.pageCount !== null && <p className="page-fact">PDF length: {result.pageCount} {result.pageCount === 1 ? "page" : "pages"}</p>}
           </div>
 
           <div className="card dimensions">
             <div className="section-heading">
               <h3>Review areas</h3>
-              <p>Ordered from lowest score to highest.</p>
+              <p>Lower scores point to places where the written evidence could be clearer.</p>
             </div>
             {result.dimensions.map((item) => <article className="dimension" key={item.id}>
               <div className="dimension-top">
                 <div><small>{item.group}</small><h4>{item.label}</h4></div>
                 <strong>{item.value}<span>/100</span></strong>
               </div>
+              <p className="dimension-help">{areaDescriptions[item.id]}</p>
               <div className="bar" aria-hidden="true"><span style={{ width: `${item.value}%` }} /></div>
               <details className="probabilities">
-                <summary>How this was scored</summary>
-                <p>Each level below shows how likely the resume was to match it.</p>
+                <summary>See scoring levels</summary>
+                <p>These are estimated matches to four descriptions, not points earned on a test.</p>
                 {item.levels.map((level, index) => <div className="probability-row" key={index}>
                   <span>{level.description}</span><strong>{Math.round(level.probability * 100)}%</strong>
                 </div>)}
@@ -180,7 +208,7 @@ export default function Home() {
             <span>{result.bullets.length} checked</span>
           </div>
           {result.bullets.length === 0
-            ? <p className="empty-note">No experience bullets were found. An “Experience” heading and bullet characters such as • help us identify them.</p>
+            ? <p className="empty-note">No experience bullets were found in the extracted text. Clear work-history headings and bullet markers help us identify them; some PDF layouts may need a DOCX or TXT export.</p>
             : Array.from(new Set(result.bullets.map((bullet) => bullet.role))).map((role, index) => {
               const bullets = result.bullets.filter((bullet) => bullet.role === role).toSorted((a, b) => a.suggestedPosition - b.suggestedPosition);
               return <details className="role-group" key={role} open={index === 0}>
