@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ReviewResult } from "@/lib/resume-review";
+
+function reviewSignature(file: File | null, targetRole: string, jobDescription: string): string | null {
+  if (!file) return null;
+  return JSON.stringify([file.name, file.size, file.lastModified, file.type, targetRole.trim(), jobDescription.trim()]);
+}
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<ReviewResult | null>(null);
+  const [targetRole, setTargetRole] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [reviewed, setReviewed] = useState<{ signature: string; result: ReviewResult } | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [demo, setDemo] = useState<{ demoAvailable: boolean; remaining: number } | null>(null);
+  const submitting = useRef(false);
+  const signature = reviewSignature(file, targetRole, jobDescription);
+  const result = signature === reviewed?.signature ? reviewed.result : null;
 
   useEffect(() => {
     fetch("/api/review", { cache: "no-store" })
@@ -19,16 +29,17 @@ export default function Home() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current || result) return;
     setError("");
-    setResult(null);
 
     const data = new FormData(event.currentTarget);
-    if (!file) {
+    if (!file || !signature) {
       setError("Choose a resume file.");
       return;
     }
     data.set("file", file);
 
+    submitting.current = true;
     setLoading(true);
     try {
       const response = await fetch("/api/review", { method: "POST", body: data });
@@ -40,11 +51,12 @@ export default function Home() {
       }
       const remaining = response.headers.get("X-Demo-Remaining");
       if (remaining !== null) setDemo({ demoAvailable: true, remaining: Number(remaining) });
-      setResult(payload as ReviewResult);
+      setReviewed({ signature, result: payload as ReviewResult });
       window.setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Review failed.");
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   }
@@ -72,6 +84,7 @@ export default function Home() {
             <input
               id="resume-file"
               type="file"
+              disabled={loading}
               accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
               onChange={(event) => {
                 setFile(event.target.files?.[0] ?? null);
@@ -82,13 +95,13 @@ export default function Home() {
             <strong>{file ? file.name : "Choose a file"}</strong>
             <small>PDF, DOCX or TXT · up to 5 MB</small>
           </label>
-          {file && <button className="remove-file" type="button" onClick={() => setFile(null)}>Remove file</button>}
+          {file && <button className="remove-file" type="button" disabled={loading} onClick={() => setFile(null)}>Remove file</button>}
 
           <label className="field-label" htmlFor="targetRole">Target role</label>
-          <input id="targetRole" name="targetRole" required maxLength={200} placeholder="e.g. Senior Software Engineer" />
+          <input id="targetRole" name="targetRole" required maxLength={200} disabled={loading} value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. Senior Software Engineer" />
 
           <label className="field-label" htmlFor="jobDescription">Job description <span>optional</span></label>
-          <textarea id="jobDescription" name="jobDescription" rows={4} maxLength={12000} placeholder="Paste a job description for a more specific review…" />
+          <textarea id="jobDescription" name="jobDescription" rows={4} maxLength={12000} disabled={loading} value={jobDescription} onChange={(event) => setJobDescription(event.target.value)} placeholder="Paste a job description for a more specific review…" />
 
           <div className="demo-note">
             <strong>Small demo</strong>
@@ -102,13 +115,14 @@ export default function Home() {
             <summary>Use your own API key for more checks</summary>
             <p>Get a key from <a href="https://console.typesafe.ai/" target="_blank" rel="noopener noreferrer">TypeSafe</a>. It is sent through this app to run your review and is not saved here.</p>
             <label className="field-label" htmlFor="apiKey">TypeSafe API key</label>
-            <input id="apiKey" name="apiKey" type="password" autoComplete="off" placeholder="Paste your API key" />
+            <input id="apiKey" name="apiKey" type="password" autoComplete="off" disabled={loading} placeholder="Paste your API key" />
           </details>
           <p className="privacy">Your resume is sent to TypeSafe for scoring. This app does not store your resume or API key.</p>
           {error && <p className="error" role="alert">{error}</p>}
-          <button className="submit" type="submit" disabled={loading}>
-            {loading ? "Checking your resume…" : "Check resume"}<span aria-hidden="true">↗</span>
+          <button className="submit" type="submit" disabled={loading || Boolean(result)}>
+            {loading ? "Checking your resume…" : result ? "Review shown below" : "Check resume"}<span aria-hidden="true">↗</span>
           </button>
+          {result && <p className="review-note">Change the resume or role details to run a new check.</p>}
         </form>
       </section>
 
@@ -191,6 +205,7 @@ export default function Home() {
         <nav aria-label="Contact">
           <a href="mailto:hamidfarmani1@gmail.com">Email me</a>
           <a href="https://hamidfarmani.com" target="_blank" rel="noopener noreferrer">hamidfarmani.com</a>
+          <a href="https://github.com/hamidfarmani" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </footer>
     </main>
